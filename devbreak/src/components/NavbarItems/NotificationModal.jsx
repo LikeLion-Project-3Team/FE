@@ -3,9 +3,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import getNoticeCount from "../../APIs/get/getNoticeCount";
+import putNoticeNoticeId from "../../APIs/put/putNoticeNoticeId"
 
-const NotificationModal = ({ notifications }) => {
-  const [unreadCount, setUnreadCount] = useState(0);
+const NotificationModal = ({ notifications, unreadCount, onNotificationClick }) => {
 
   useEffect(() => {
     const fetchUnreadCount = async () => {
@@ -18,12 +18,18 @@ const NotificationModal = ({ notifications }) => {
     };
 
     fetchUnreadCount();
-  }, []); 
+  }, []);
 
-  const navigate = useNavigate();  // navigate 훅을 사용하여 페이지 이동
+  const navigate = useNavigate();
 
-  // 알림 클릭 시 해당 알림에 맞는 페이지로 이동
-  const handleNotificationClick = (notice) => {
+  const handleNotificationClick = async (notice) => {
+
+    if (!notice.isViewed) {
+      // 알림이 아직 읽히지 않은 경우
+      onNotificationClick(notice.noticeId); // 부모 컴포넌트로 상태 업데이트 요청
+      setUnreadCount(prevCount => prevCount -1);
+    }
+
     switch (notice.type) {
       case "블로그 초대":
       case "블로그 즐겨찾기":
@@ -31,6 +37,7 @@ const NotificationModal = ({ notifications }) => {
         navigate(`/blog/${notice.relatedId.blogId}`);
         break;
       case "글 좋아요":
+      case "새로운 댓글":
         // 글 페이지로 이동 (articleId 사용)
         navigate(`/breakthrough/${notice.relatedId.articleId}`);
         break;
@@ -46,21 +53,21 @@ const NotificationModal = ({ notifications }) => {
     <ModalContainer>
       <DashBoard>
         <Header>
-          <strong>{`${unreadCount} new notifications`}</strong> <span>🔔</span>
+          <strong>{unreadCount > 0 ? `new notifications` : "No new notifications"}</strong> <span>🔔</span>
         </Header>
         <Divider />
         <Content>
           {visibleNotifications.map((notification, index) => (
             <div key={index}>
-              <NotificationItem onClick={() => handleNotificationClick(notification)}>
-                <NotificationText>{notification.message}</NotificationText>
+              <NotificationItem onClick={() => handleNotificationClick(notification)} isNew={!notification.isViewed}>
+                <NotificationText isNew={!notification.isViewed}>{notification.message}</NotificationText>
                 <NotificationTime>{notification.time}</NotificationTime>
               </NotificationItem>
               <Divider /> {/* 모든 NotificationItem 아래에 Divider 추가 */}
             </div>
           ))}
         </Content>
-        {notifications.length > 4 && <ReadMoreButton onClick={()=>navigate(`/notification`)}>Read more</ReadMoreButton>}
+        {notifications.length > 4 && <ReadMoreButton onClick={() => navigate(`/notification`)}>Read more</ReadMoreButton>}
       </DashBoard>
     </ModalContainer>
   );
@@ -139,7 +146,11 @@ const NotificationText = styled.span`
   font-size: 1vw;
   font-weight: 400;
   width: 80vw;
-  color: #ffffff;
+  color: ${(props) => (props.isNew ? '#ffffff' : 'rgba(255, 255, 255, 0.6)')};
+
+  &:hover {
+    color: ${(props) => (props.isNew ? '#02f798' : 'inherit')};
+  }
 `;
 
 const NotificationTime = styled.span`

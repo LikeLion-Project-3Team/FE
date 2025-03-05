@@ -7,8 +7,9 @@ import ProfileModal from "./ProfileModal";
 import NotificationModal from "./NotificationModal";
 import { useAuth } from '../../context/AuthContext';
 import NotificationList from "./NotificationList";
+import getNoticeCount from "../../APIs/get/getNoticeCount";
 
-const NavBar = () => {
+const NavBar = ({type}) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isLoggedIn, logout } = useAuth();
@@ -19,6 +20,39 @@ const NavBar = () => {
 
   // 알림 상태 관리
   const notifications = NotificationList();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+    useEffect(() => {
+      const fetchUnreadCount = async () => {
+        try {
+          const data = await getNoticeCount();
+          setUnreadCount(data.unreadCount);
+        } catch (error) {
+          console.error('Error fetching unread count:', error);
+        }
+      };
+  
+      fetchUnreadCount();
+    }, []); 
+
+    const updateUnreadCount = (noticeId) => {
+      // 클릭한 알림을 확인하고 상태 업데이트
+      const updatedNotifications = notifications.map((notice) => {
+        if (notice.noticeId === noticeId && !notice.isViewed) {
+          notice.isViewed = true; // 알림 상태 업데이트
+          return notice;
+        }
+        return notice;
+      });
+  
+      // unreadCount 갱신 (isViewed가 false인 알림만 세기)
+      const newUnreadCount = updatedNotifications.filter((notice) => !notice.isViewed).length;
+      setUnreadCount(newUnreadCount); // unreadCount 업데이트
+    };
+  
+    const handleNotificationClick = (noticeId) => {
+      updateUnreadCount(noticeId); // 알림 클릭 시 unreadCount 갱신
+    };
 
   // 모달 닫힘 처리를 위한 ref
   const profileModalRef = useRef(null);
@@ -92,6 +126,7 @@ const NavBar = () => {
       <Link to="/">
         <Logo src="/image/logo.svg" alt="logo" />
       </Link>
+      {type !== "startpage" && ( 
       <NavItems>
         <NavItem active={location.pathname.startsWith("/home")}>
           <Link to="/home">Home</Link>
@@ -103,16 +138,20 @@ const NavBar = () => {
           <Link to="/workspace">Workspace</Link>
         </NavItem>
       </NavItems>
+      )}
       {isLoggedIn ? (
         <LoggedInContainer>
           <LoggedInBtnContainer ref={notificationModalRef}>
             <StyledIoMdNotificationsOutlineContainer onClick={toggleNotificationModal}>
               <StyledIoMdNotificationsOutline active={isNotificationModalOpen} />
               {notifications.length > 0 && (
-                <NotificationBadge active={isNotificationModalOpen} hasNotifications={notifications.length > 0} />
+                // <NotificationBadge active={isNotificationModalOpen} hasNotifications={notifications.length > 0} />
+                <NotificationBadge active={isNotificationModalOpen} hasNotifications={unreadCount > 0}>
+                {unreadCount}
+              </NotificationBadge>
               )}
             </StyledIoMdNotificationsOutlineContainer>
-            {isNotificationModalOpen && <NotificationModal notifications={notifications} />}
+            {isNotificationModalOpen && <NotificationModal notifications={notifications} unreadCount={unreadCount} onNotificationClick={handleNotificationClick}/>}
           </LoggedInBtnContainer>
           <LoggedInBtnContainer ref={profileModalRef}>
             <StyledHiOutlineUserCircle onClick={toggleProfileModal} active={isProfileModalOpen} />
@@ -213,15 +252,21 @@ const StyledIoMdNotificationsOutlineContainer = styled.div`
 
 const NotificationBadge = styled.div`
   position: absolute;
-  top: -0.3vw; // 아이콘의 상단에 위치
+  top: -0.2vw; // 아이콘의 상단에 위치
   right: -0.3vw; // 아이콘의 오른쪽에 위치
-  width: 0.5vw; // 빨간 원의 크기
-  height: 0.5vw;
+  width: 1.1vw; // 빨간 원의 크기
+  height: 1.1vw;
   z-index: 1000;
   background-color: #ff4f4f; // 빨간색
   border-radius: 50%; // 원형으로 설정
   display: ${({ active, hasNotifications }) =>
     !active && hasNotifications ? "block" : "none"}; // active 상태가 아니고, 알림이 있을 때만 표시
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 0.85vw; // 숫자 크기
+  font-weight: normal;
+  text-align: center;
 `;
 
 const StyledIoMdNotificationsOutline = styled(IoMdNotificationsOutline)`

@@ -94,7 +94,7 @@ const routes = [
   {
     path: "/notification",
     element: <NotificationPage />,
-    name: "12. 알림 전체 보기 페이지",
+    name: "12. 전체 알림 조회 페이지",
   },
 ];
 

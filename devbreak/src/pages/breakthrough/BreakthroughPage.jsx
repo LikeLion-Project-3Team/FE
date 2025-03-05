@@ -128,11 +128,13 @@ function BreakthroughPage() {
             onPageChange={handlePageChange}
             onItemClick={handleItemClick}
           />
+          <PaginationContainer>
           <Pagination
             currentPage={currentPage}
             totalPages={Math.ceil(filteredData.length / itemsPerPage)}
             onPageChange={handlePageChange}
           />
+          </PaginationContainer>
         </BreakthroughContainer>
       </Container>
       <Footer />
@@ -142,7 +144,6 @@ function BreakthroughPage() {
 
 export default BreakthroughPage;
 
-// Styled Components
 const Container = styled.div`
   font-family: "Pretendard";
   color: #ffffff;
@@ -223,3 +224,8 @@ const Title = styled.div`
   flex-direction: row;
   margin-bottom: 3vh;
 `;
+
+const PaginationContainer = styled.div`
+  display: flex;
+  padding: 0 20vw;
+`
